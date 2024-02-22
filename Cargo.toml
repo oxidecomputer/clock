@@ -1,0 +1,25 @@
+[package]
+name = "bsfb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.71"
+chrono = { version = "0.4.26", features = ["serde"] }
+chrono-tz = "0.8.2"
+dropshot = { git = "https://github.com/oxidecomputer/dropshot", version = "0.9.1-dev" }
+hyper = "0.14.27"
+image = "0.24.6"
+libc = "0.2.146"
+rusttype = "0.9.3"
+schemars = "0.8.15"
+serde = { version = "1.0.164", features = ["derive"] }
+serde_json = "1.0.96"
+slog = "2.7.0"
+slog-bunyan = "2.4.0"
+slog-term = "2.9.0"
+tokio = { version = "1.32.0", features = ["full"] }
+
+[target.'cfg(target_os="linux")'.dependencies]
+x11rb = { version = "0.12.0", features = ["dbe", "image"] }
+xkeysym = "0.2.0"
