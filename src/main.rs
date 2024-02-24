@@ -315,12 +315,6 @@ async fn main() -> Result<()> {
         fb.height().try_into().unwrap(),
     );
 
-    {
-        let mut i = app.inner.lock().unwrap();
-        i.height = img.height();
-        i.width = img.width();
-    }
-
     let clocks = [("Oxide", chrono_tz::US::Pacific)];
 
     let ch = img.height() / clocks.len() as u32;
