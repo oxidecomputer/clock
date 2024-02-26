@@ -152,29 +152,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bsfb"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "chrono-tz",
- "dropshot",
- "hyper",
- "image",
- "libc",
- "rusttype",
- "schemars",
- "serde",
- "serde_json",
- "slog",
- "slog-bunyan",
- "slog-term",
- "tokio",
- "x11rb",
- "xkeysym",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -257,6 +234,29 @@ dependencies = [
  "parse-zoneinfo",
  "phf",
  "phf_codegen",
+]
+
+[[package]]
+name = "clock"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "chrono-tz",
+ "dropshot",
+ "hyper",
+ "image",
+ "libc",
+ "rusttype",
+ "schemars",
+ "serde",
+ "serde_json",
+ "slog",
+ "slog-bunyan",
+ "slog-term",
+ "tokio",
+ "x11rb",
+ "xkeysym",
 ]
 
 [[package]]

@@ -10,6 +10,10 @@ use libc::{c_int, c_void};
 
 use crate::{ctf::Ctf, kvm::Kvm};
 
+extern "C" {
+    fn arc4random_uniform(upper_bound: u32) -> u32;
+}
+
 fn check_ret_fd(fv: c_int, msg: &str) -> Result<()> {
     if fv < 0 {
         let e = std::io::Error::last_os_error();
@@ -133,7 +137,7 @@ impl Framebuffer {
          * framebuffer into stripes, so that we can draw only the portions of
          * the display that are dirty.
          */
-        const CHUNKS: usize = 128;
+        const CHUNKS: usize = 256;
         let mut buckets = [false; CHUNKS];
         let chsz = (self.width * self.height) as usize / CHUNKS;
 
@@ -152,12 +156,35 @@ impl Framebuffer {
             }
         }
 
-        let buf = self.shadow.as_ptr() as *const c_void;
-        for (idx, dirty) in buckets.iter().enumerate() {
-            if !dirty && !self.clear {
-                continue;
-            }
+        /*
+         * First, filter out only the buckets we need to draw:
+         */
+        let mut indexes = buckets
+            .into_iter()
+            .enumerate()
+            .filter(|(_, dirty)| self.clear || *dirty)
+            .map(|(idx, _)| idx)
+            .collect::<Vec<_>>();
 
+        /*
+         * Because our direct framebuffer writes are slow enough to be visible,
+         * there was a sort of "swoop" effect once a second in which at least
+         * one digit appears to roll off the display.  This has been reported to
+         * cause a sort of motion sickness in some individuals.
+         *
+         * If we randomise the order in which we draw buckets that require an
+         * update, this swoop becomes more of a dissolve, which is hopefully
+         * less visually jarring.
+         *
+         * Use the Fisher-Yates shuffle to randomise the draw order:
+         */
+        for i in 1..indexes.len() {
+            let j = unsafe { arc4random_uniform((i + 1) as u32) } as usize;
+            indexes.swap(i, j);
+        }
+
+        let buf = self.shadow.as_ptr() as *const c_void;
+        for idx in indexes {
             let chsz = ((self.width * self.height) as usize / CHUNKS) * 4;
             let offs = (self.baseaddr as i64) + (idx as i64) * (chsz as i64);
             let buf = (buf as usize) + (idx as usize) * (chsz as usize);
