@@ -40,6 +40,11 @@ struct Inner {
     image: Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
     width: u32,
     height: u32,
+    countdown: Option<Countdown>,
+}
+
+struct Countdown {
+    until: Instant,
 }
 
 struct App {
@@ -105,6 +110,7 @@ fn emit_text(
     rgb: Rgb<u8>,
     img: &mut RgbImage,
     fixed_numbers: bool,
+    fixed_extra: bool,
 ) -> u32 {
     let height = pxht as f32;
 
@@ -117,6 +123,15 @@ fn emit_text(
             let tw = font.glyph(c).scaled(scale).h_metrics().advance_width;
             if tw > max {
                 max = tw;
+            }
+        }
+        if fixed_extra {
+            for c in once('m').chain(once('s')) {
+                let font = fonts.for_glyph(c);
+                let tw = font.glyph(c).scaled(scale).h_metrics().advance_width;
+                if tw > max {
+                    max = tw;
+                }
             }
         }
         Some(max)
@@ -243,6 +258,7 @@ async fn main() -> Result<()> {
         inner: Mutex::new(Inner {
             msg: None,
             image: None,
+            countdown: None,
             height: 1,
             width: 1,
         }),
@@ -346,6 +362,78 @@ async fn main() -> Result<()> {
             let i = app.inner.lock().unwrap();
 
             /*
+             * We've got a countdown timer to render!
+             */
+            if let Some(cd) = i.countdown.as_ref() {
+                fn durstr(dur: Duration) -> String {
+                    let mut secs = dur.as_secs();
+
+                    let mins = secs / 60;
+                    secs -= mins * 60;
+
+                    if mins == 0 {
+                        format!("{secs:2} s")
+                    } else {
+                        format!("{mins:2} m {secs:2} s")
+                    }
+                }
+
+                /*
+                 * How much time remains until the countdown timer expires?
+                 */
+                let (colour, msg, msecoff) = if let Some(rem) =
+                    cd.until.checked_duration_since(inow)
+                {
+                    let mut x = rem.as_millis() as u64;
+                    while x > 1000 {
+                        x -= 1000;
+                    }
+
+                    (Rgb([0x48, 0xd5, 0x97]), durstr(rem), x)
+                } else {
+                    /*
+                     * The timer has expired.  How long has it been?
+                     */
+                    if let Some(ela) = inow.checked_duration_since(cd.until) {
+                        let mut x = ela.as_millis() as u64;
+                        while x > 1000 {
+                            x -= 1000;
+                        }
+                        x = 1000 - x;
+
+                        (Rgb([0xff, 0, 0]), durstr(ela), x)
+                    } else {
+                        /*
+                         * We are very confused!
+                         */
+                        (Rgb([0xff, 0, 0]), "timer expired!".into(), 1000)
+                    }
+                };
+
+                let ch = img.height() as u32;
+                let ht = ch * 11 / 18;
+                emit_text(
+                    &msg,
+                    Align::Centre(0, img.width()),
+                    (ch - ht - (ht / 3)) / 2,
+                    &fonts,
+                    ht,
+                    colour,
+                    &mut img,
+                    true,
+                    false,
+                );
+
+                paint(&mut fb, &img);
+
+                std::thread::sleep(Duration::from_millis(25));
+                //std::thread::sleep(Duration::from_millis(
+                //    msecoff.saturating_sub(200),
+                //));
+                continue;
+            }
+
+            /*
              * We've been given a picture to display via the HTTP API.  Draw
              * that on the screen:
              */
@@ -396,6 +484,7 @@ async fn main() -> Result<()> {
                     m.height,
                     m.rgb,
                     &mut img,
+                    false,
                     false,
                 );
 
@@ -452,6 +541,7 @@ async fn main() -> Result<()> {
                 grey,
                 &mut img,
                 false,
+                false,
             );
 
             emit_text(
@@ -462,6 +552,7 @@ async fn main() -> Result<()> {
                 ht,
                 grey,
                 &mut img,
+                false,
                 false,
             );
 
@@ -480,6 +571,7 @@ async fn main() -> Result<()> {
                 colour,
                 &mut img,
                 true,
+                false,
             );
         }
 

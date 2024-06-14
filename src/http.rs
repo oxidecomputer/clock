@@ -2,7 +2,11 @@
  * Copyright 2024 Oxide Computer Company
  */
 
-use std::{result::Result as SResult, sync::Arc, time::Duration};
+use std::{
+    result::Result as SResult,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use ::image::{imageops::FilterType, Rgb};
 use anyhow::{anyhow, bail, Result};
@@ -51,6 +55,7 @@ async fn clear(
 
     i.msg = None;
     i.image = None;
+    i.countdown = None;
 
     Ok(HttpResponseUpdatedNoContent())
 }
@@ -69,6 +74,46 @@ async fn message(
     let mut i = app.inner.lock().unwrap();
 
     i.msg = Some(b.into());
+
+    Ok(HttpResponseUpdatedNoContent())
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct Countdown {
+    seconds: u32,
+}
+
+impl From<Countdown> for crate::Countdown {
+    fn from(value: Countdown) -> Self {
+        crate::Countdown {
+            until: Instant::now()
+                .checked_add(Duration::from_secs(value.seconds as u64))
+                .unwrap_or(Instant::now()),
+        }
+    }
+}
+
+#[endpoint {
+    method = POST,
+    path = "/countdown",
+}]
+async fn countdown(
+    rc: RequestContext<Arc<App>>,
+    body: TypedBody<Countdown>,
+) -> SResult<HttpResponseUpdatedNoContent, HttpError> {
+    let app = rc.context();
+    let b = body.into_inner();
+
+    if b.seconds > 60 * 90 {
+        return Err(HttpError::for_bad_request(
+            None,
+            "can only count up to 90 minutes".into(),
+        ));
+    }
+
+    let mut i = app.inner.lock().unwrap();
+
+    i.countdown = Some(b.into());
 
     Ok(HttpResponseUpdatedNoContent())
 }
@@ -126,6 +171,7 @@ pub(crate) async fn server(
     api.register(message).unwrap();
     api.register(clear).unwrap();
     api.register(image).unwrap();
+    api.register(countdown).unwrap();
 
     let log = app.log.clone();
     let s = dropshot::HttpServerStarter::new(&cd, api, app, &log)
