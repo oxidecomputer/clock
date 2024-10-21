@@ -11,6 +11,7 @@ dropshot = { git = "https://github.com/oxidecomputer/dropshot", version = "0.9.1
 hyper = "0.14.27"
 image = "0.24.6"
 libc = "0.2.146"
+prometheus-http-query = "0.8.3"
 rusttype = "0.9.3"
 schemars = "0.8.15"
 serde = { version = "1.0.164", features = ["derive"] }

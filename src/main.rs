@@ -22,6 +22,7 @@ mod fb;
 mod http;
 #[cfg(target_os = "illumos")]
 mod kvm;
+mod temperature;
 mod utils;
 #[cfg(target_os = "linux")]
 mod x11;
@@ -253,8 +254,10 @@ impl DateTimeExt for DateTime<Utc> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let log = utils::make_log("corner");
+    let temps = temperature::Temperatures::new(log.clone())?;
     let app = Arc::new(App {
-        log: utils::make_log("corner"),
+        log,
         inner: Mutex::new(Inner {
             msg: None,
             image: None,
@@ -565,12 +568,51 @@ async fn main() -> Result<()> {
             emit_text(
                 &now.format("%H:%M:%S").to_string(),
                 Align::Centre(0, img.width()),
-                yc + (ch - ht - (ht / 3)) / 2,
+                yc + (ch - ht - (ht / 5)) / 2,
                 &fonts,
                 ht,
                 colour,
                 &mut img,
                 true,
+                false,
+            );
+        }
+
+        /*
+         * XXX Draw the local temperature, if available!
+         */
+        let temps = temps.temperatures(&["interior-door", "outside-awning"]);
+        if let Some(t) = temps[0] {
+            let ht = ch / 5;
+
+            let grey = Rgb([0x7d, 0x83, 0x85]);
+
+            emit_text(
+                &format!("I: {t:03.1} F"),
+                Align::Left(0),
+                0,
+                &fonts,
+                ht,
+                grey,
+                &mut img,
+                false,
+                false,
+            );
+        }
+        if let Some(t) = temps[1] {
+            let ht = ch / 5;
+
+            let grey = Rgb([0x7d, 0x83, 0x85]);
+
+            emit_text(
+                &format!("O: {t:03.1} F"),
+                Align::Right(img.width() - 1),
+                0,
+                &fonts,
+                ht,
+                grey,
+                &mut img,
+                false,
                 false,
             );
         }
