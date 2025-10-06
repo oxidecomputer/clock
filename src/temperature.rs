@@ -78,7 +78,5 @@ async fn temperature(inner: &Inner, prom: &Client) -> Result<()> {
 
     *inner.temps.lock().unwrap() = temps;
 
-    println!("temps = {:#?}", inner.temps.lock().unwrap());
-
     Ok(())
 }
