@@ -564,7 +564,7 @@ async fn main() -> Result<()> {
             emit_text(
                 &now.format("%H:%M:%S").to_string(),
                 Align::Centre(0, img.width()),
-                yc + (ch - ht - (ht / 5)) / 2,
+                yc + (ch - ht - (ht / 9)) / 2,
                 &fonts,
                 ht,
                 colour,
