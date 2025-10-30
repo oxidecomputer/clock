@@ -16,12 +16,8 @@ use image::{GenericImage, ImageBuffer, Rgb, RgbImage};
 use rusttype::{point, Font, Scale};
 
 #[cfg(target_os = "illumos")]
-mod ctf;
-#[cfg(target_os = "illumos")]
 mod fb;
 mod http;
-#[cfg(target_os = "illumos")]
-mod kvm;
 mod temperature;
 mod utils;
 #[cfg(target_os = "linux")]

@@ -21,6 +21,9 @@ slog-bunyan = "2.4.0"
 slog-term = "2.9.0"
 tokio = { version = "1.32.0", features = ["full"] }
 
+[target.'cfg(target_os="illumos")'.dependencies]
+illumos-fb = { git = "https://github.com/illumos/fb-rs" }
+
 [target.'cfg(target_os="linux")'.dependencies]
 x11rb = { version = "0.12.0", features = ["dbe", "image"] }
 xkeysym = "0.2.0"
